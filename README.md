@@ -50,7 +50,6 @@ Lance le bot en production (nécessite d'avoir build avant) :
 npm run build
 npm start
 ```
-## 📁 Structure du projet
 ```
 roomy/
 ├── src/

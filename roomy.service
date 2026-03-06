@@ -1,0 +1,17 @@
+[Unit]
+Description=Roomy Discord Bot
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=helluy
+WorkingDirectory=/home/helluy/roomy
+ExecStart=/usr/bin/node dist/index.js
+Restart=on-failure
+RestartSec=10
+EnvironmentFile=/home/helluy/roomy/.env
+
+[Install]
+WantedBy=multi-user.target
+
