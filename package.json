@@ -12,6 +12,10 @@
   },
   "license": "ISC",
   "author": "Hugo Helluy",
+  "engines": {
+    "node": "18.20.4",
+    "npm": "9.2.0"
+  },
   "type": "module",
   "main": "index.js",
   "scripts": {
@@ -27,5 +31,8 @@
     "tsup": "^8.5.1",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3"
+  },
+  "overrides": {
+    "undici": "6.23.0"
   }
 }
