@@ -1,4 +1,4 @@
-import { Client, GatewayIntentBits } from "discord.js";
+import { ChatInputCommandInteraction, Client, GatewayIntentBits } from "discord.js";
 import { config } from "./config/config";
 import { commands } from "./commands";
 import { deployCommands } from "./deploy-commands";
@@ -18,7 +18,7 @@ client.once("clientReady", async () => {
 
     // Deploy commands to all guilds the bot is already in
     for (const guild of client.guilds.cache.values()) {
-        await deployCommands({ guildId: guild.id });
+        await deployCommands({ guildId: guild.id as string });
     }
 
     // Start the room cleanup batch (checks every 5 minutes)
@@ -26,16 +26,17 @@ client.once("clientReady", async () => {
 });
 
 client.on("guildCreate", async (guild) => {
-    await deployCommands({ guildId: guild.id });
+    await deployCommands({ guildId: guild.id as string });
 });
 
 client.on("interactionCreate", async (interaction) => {
     if (!interaction.isChatInputCommand()) {
         return;
     }
-    const { commandName } = interaction;
+    const chatInteraction = interaction as ChatInputCommandInteraction;
+    const { commandName } = chatInteraction;
     if (commands[commandName as keyof typeof commands]) {
-        await commands[commandName as keyof typeof commands].execute(interaction);
+        await commands[commandName as keyof typeof commands].execute(chatInteraction);
     }
 });
 
