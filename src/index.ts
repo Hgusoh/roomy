@@ -2,9 +2,15 @@ import { Client, GatewayIntentBits } from "discord.js";
 import { config } from "./config/config";
 import { commands } from "./commands";
 import { deployCommands } from "./deploy-commands";
+import { startRoomCleanupBatch } from "./batch/room-cleanup";
 
 const client = new Client({
-    intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.DirectMessages],
+    intents: [
+        GatewayIntentBits.Guilds,
+        GatewayIntentBits.GuildMessages,
+        GatewayIntentBits.DirectMessages,
+        GatewayIntentBits.GuildVoiceStates,
+    ],
 });
 
 client.once("clientReady", async () => {
@@ -14,6 +20,9 @@ client.once("clientReady", async () => {
     for (const guild of client.guilds.cache.values()) {
         await deployCommands({ guildId: guild.id });
     }
+
+    // Start the room cleanup batch (checks every 5 minutes)
+    startRoomCleanupBatch(client);
 });
 
 client.on("guildCreate", async (guild) => {
