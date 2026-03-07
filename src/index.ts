@@ -7,8 +7,13 @@ const client = new Client({
     intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.DirectMessages],
 });
 
-client.once("clientReady", () => {
+client.once("clientReady", async () => {
     console.log("Discord bot is ready! 🤖");
+
+    // Deploy commands to all guilds the bot is already in
+    for (const guild of client.guilds.cache.values()) {
+        await deployCommands({ guildId: guild.id });
+    }
 });
 
 client.on("guildCreate", async (guild) => {
@@ -16,7 +21,7 @@ client.on("guildCreate", async (guild) => {
 });
 
 client.on("interactionCreate", async (interaction) => {
-    if (!interaction.isCommand()) {
+    if (!interaction.isChatInputCommand()) {
         return;
     }
     const { commandName } = interaction;
