@@ -1,101 +1,193 @@
 # 🤖 Roomy
-Un bot Discord qui gère des salons (rooms).
-## 📋 Prérequis
-- [Node.js](https://nodejs.org/) version 18.x ou supérieure
-- [npm](https://www.npmjs.com/) ou [yarn](https://yarnpkg.com/)
-- Un compte [Discord Developer](https://discord.com/developers/applications)
+
+A Discord bot that manages temporary voice channels (rooms).
+
+## 📋 Prerequisites
+
+- [Node.js](https://nodejs.org/) version 18.x or higher
+- [npm](https://www.npmjs.com/)
+- A [Discord Developer](https://discord.com/developers/applications) account
+
 ## 🚀 Installation
-### 1. Cloner le projet
+
+### 1. Clone the project
+
 ```bash
 git clone https://github.com/Hgusoh/roomy.git
 cd roomy
 ```
-### 2. Installer les dépendances
+
+### 2. Install dependencies
+
 ```bash
 npm install
 ```
+
 ### 3. Configuration
-Créez un fichier `.env` à la racine du projet avec les variables suivantes :
+
+Create a `.env` file at the project root with the following variables:
+
 ```env
-DISCORD_TOKEN=votre_token_discord
-DISCORD_CLIENT_ID=votre_client_id
+DISCORD_TOKEN=your_discord_token
+DISCORD_CLIENT_ID=your_client_id
 ```
-**Comment obtenir ces valeurs :**
-1. Allez sur [Discord Developer Portal](https://discord.com/developers/applications)
-2. Créez une nouvelle application ou sélectionnez-en une existante
-3. **DISCORD_CLIENT_ID** : Trouvez-le dans l'onglet "General Information" → "Application ID"
-4. **DISCORD_TOKEN** : Allez dans l'onglet "Bot" → Cliquez sur "Reset Token" pour obtenir votre token
-**⚠️ Important :** Ne partagez jamais votre token ! Gardez votre fichier `.env` secret.
-### 4. Inviter le bot sur votre serveur
-Générez un lien d'invitation :
-1. Dans le [Discord Developer Portal](https://discord.com/developers/applications)
-2. Allez dans "OAuth2" → "URL Generator"
-3. Sélectionnez les scopes : `bot`, `applications.commands`
-4. Sélectionnez les permissions nécessaires
-5. Copiez l'URL générée et ouvrez-la dans votre navigateur
-## 🎮 Utilisation
-### Mode développement
-Lance le bot avec rechargement automatique lors des modifications :
+
+**How to get these values:**
+
+1. Go to the [Discord Developer Portal](https://discord.com/developers/applications)
+2. Create a new application or select an existing one
+3. **DISCORD_CLIENT_ID**: Found in the "General Information" tab → "Application ID"
+4. **DISCORD_TOKEN**: Go to the "Bot" tab → Click "Reset Token" to get your token
+
+**⚠️ Important:** Never share your token! Keep your `.env` file secret.
+
+### 4. Invite the bot to your server
+
+Generate an invitation link:
+
+1. In the [Discord Developer Portal](https://discord.com/developers/applications)
+2. Go to "OAuth2" → "URL Generator"
+3. Select scopes: `bot`, `applications.commands`
+4. Select the required permissions (Manage Channels, Connect, etc.)
+5. Copy the generated URL and open it in your browser
+
+## 🎮 Usage
+
+### Development mode
+
+Starts the bot with hot-reload on file changes:
+
 ```bash
 npm run dev
 ```
+
 ### Build
-Compile le projet TypeScript :
+
+Compiles the TypeScript project:
+
 ```bash
 npm run build
 ```
+
 ### Production
-Lance le bot en production (nécessite d'avoir build avant) :
+
+Runs the bot in production (requires building first):
+
 ```bash
 npm run build
 npm start
 ```
+
+## 🤖 Commands
+
+### `/ping`
+
+A simple health-check command. Replies with **Pong!**
+
+### `/create-room`
+
+Creates a temporary voice channel under a **"Rooms"** category.
+
+| Option | Required | Description |
+|--------|----------|-------------|
+| `name` | ✅ Yes | The name of the voice channel to create. |
+| `icon` | ❌ No | An optional icon prepended to the channel name. |
+
+**Available icons:**
+
+| Key | Icon |
+|-----|------|
+| `gaming` | 🎮 |
+| `music` | 🎵 |
+| `study` | 📚 |
+| `chill` | ☕ |
+| `movie` | 🎬 |
+| `sport` | ⚽ |
+| `code` | 💻 |
+| `art` | 🎨 |
+
+**How it works:**
+
+1. Run `/create-room name:My Room` (optionally add `icon:gaming`).
+2. The bot looks for a category named **"Rooms"** in the server. If it doesn't exist, it creates one automatically.
+3. A new voice channel is created under that category (e.g. `🎮 My Room`).
+
+### 🧹 Automatic room cleanup
+
+The bot runs a background task every **5 minutes** that checks all voice channels under the **"Rooms"** category. If a channel is found empty on **two consecutive checks** (i.e. ~10 minutes with no one in it), it is automatically deleted. This keeps your server clean from abandoned rooms.
+
+## 📁 Project structure
+
 ```
 roomy/
 ├── src/
-│   ├── commands/          # Commandes du bot
-│   │   ├── index.ts       # Export des commandes
-│   │   └── ping.ts        # Exemple de commande
-│   ├── config/            # Configuration
-│   │   └── config.ts      # Chargement des variables d'env
-│   ├── deploy-commands.ts # Déploiement des commandes slash
-│   └── index.ts           # Point d'entrée du bot
-├── .env                   # Variables d'environnement (à créer)
+│   ├── batch/
+│   │   └── room-cleanup.ts  # Automatic cleanup of empty rooms
+│   ├── commands/
+│   │   ├── index.ts          # Command registry
+│   │   ├── create-room.ts    # /create-room command
+│   │   └── ping.ts           # /ping command
+│   ├── config/
+│   │   └── config.ts         # Environment variables loader
+│   ├── deploy-commands.ts    # Slash commands deployment
+│   └── index.ts              # Bot entry point
+├── .env                      # Environment variables (to create)
 ├── .gitignore
+├── CONTRIBUTING.md
 ├── package.json
+├── roomy.service             # Systemd service file for production
 ├── tsconfig.json
 └── README.md
 ```
-## 🛠️ Technologies utilisées
-- [Discord.js](https://discord.js.org/) v14.25.1 - Bibliothèque pour interagir avec l'API Discord
-- [TypeScript](https://www.typescriptlang.org/) - Typage statique
-- [tsx](https://github.com/privatenumber/tsx) - Exécution TypeScript pour le développement
-- [tsup](https://tsup.egoist.dev/) - Bundler TypeScript rapide
-- [dotenv](https://github.com/motdotla/dotenv) - Gestion des variables d'environnement
-## 📝 Ajouter une nouvelle commande
-1. Créez un nouveau fichier dans `src/commands/` (ex: `ma-commande.ts`)
-2. Exportez votre commande avec la structure suivante :
+
+## 🛠️ Tech stack
+
+- [Discord.js](https://discord.js.org/) v14 — Discord API library
+- [TypeScript](https://www.typescriptlang.org/) — Static typing
+- [tsx](https://github.com/privatenumber/tsx) — TypeScript runner for development
+- [tsup](https://tsup.egoist.dev/) — Fast TypeScript bundler
+- [dotenv](https://github.com/motdotla/dotenv) — Environment variable management
+
+## 📝 Adding a new command
+
+1. Create a new file in `src/commands/` (e.g. `my-command.ts`)
+2. Export your command with the following structure:
+
 ```typescript
-import { CommandInteraction, SlashCommandBuilder } from "discord.js";
+import { ChatInputCommandInteraction, SlashCommandBuilder } from "discord.js";
+
 export const data = new SlashCommandBuilder()
-    .setName("ma-commande")
-    .setDescription("Description de ma commande");
-export async function execute(interaction: CommandInteraction) {
-    await interaction.reply("Réponse de la commande");
+    .setName("my-command")
+    .setDescription("Description of my command");
+
+export async function execute(interaction: ChatInputCommandInteraction) {
+    await interaction.reply("Command response");
 }
 ```
-3. Ajoutez votre commande dans `src/commands/index.ts`
-## 🐛 Dépannage
-### Le bot ne se connecte pas
-- Vérifiez que votre `DISCORD_TOKEN` est correct dans le fichier `.env`
-- Assurez-vous que le bot est activé dans le Discord Developer Portal
-### Les commandes slash n'apparaissent pas
-- Les commandes sont déployées automatiquement quand le bot rejoint un serveur
-- Cela peut prendre quelques minutes pour que Discord les synchronise
-## 📄 Licence
+
+3. Register your command in `src/commands/index.ts`
+
+## 🐛 Troubleshooting
+
+### The bot won't connect
+
+- Check that your `DISCORD_TOKEN` is correct in the `.env` file
+- Make sure the bot is enabled in the Discord Developer Portal
+
+### Slash commands don't show up
+
+- Commands are deployed automatically when the bot starts and when it joins a server
+- It may take a few minutes for Discord to sync them
+
+## 📄 License
+
 ISC
-## 👤 Auteur
+
+## 👤 Author
+
 Hugo Helluy
-## 🔗 Liens
+
+## 🔗 Links
+
 - [Discord.js Documentation](https://discord.js.org/)
 - [Discord Developer Portal](https://discord.com/developers/applications)
