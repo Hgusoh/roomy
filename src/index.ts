@@ -92,6 +92,27 @@ client.on("voiceStateUpdate", async (oldState, newState) => {
     const icon = config?.icon ?? "🔊";
     const tempName = `${icon} ${baseName} — ${member.displayName}`;
 
+    // Check bot permissions in the parent category
+    const parentId = hubChannel.parentId;
+    if (parentId) {
+        const botMember = guild.members.cache.get(guild.client.user!.id);
+        if (botMember) {
+            const perms = botMember.permissionsIn(parentId);
+            const requiredFlags = [
+                PermissionFlagsBits.ManageChannels,
+                PermissionFlagsBits.ManageRoles,
+                PermissionFlagsBits.ViewChannel,
+                PermissionFlagsBits.Connect,
+                PermissionFlagsBits.MoveMembers,
+            ];
+            if (!requiredFlags.every(f => perms.has(f))) {
+                console.error(`❌ Permissions manquantes pour créer un salon temporaire dans la catégorie ${parentId}`);
+                await sendLog(guild.id as string, `❌ Permissions manquantes pour créer un salon temporaire pour **${member.displayName}**. Vérifiez les permissions du bot dans la catégorie.`);
+                return;
+            }
+        }
+    }
+
     try {
         const tempChannel = await guild.channels.create({
             name: tempName,

@@ -46,6 +46,25 @@ export async function execute(interaction: ChatInputCommandInteraction) {
 
     const channelName = `➕ ${name}`;
 
+    // Check bot permissions in the target category
+    const botMember = guild.members.cache.get(guild.client.user!.id);
+    if (botMember) {
+        const perms = botMember.permissionsIn(category.id);
+        const required = [
+            { flag: PermissionFlagsBits.ManageChannels, name: "Manage Channels" },
+            { flag: PermissionFlagsBits.ManageRoles, name: "Manage Roles" },
+            { flag: PermissionFlagsBits.ViewChannel, name: "View Channel" },
+            { flag: PermissionFlagsBits.Connect, name: "Connect" },
+        ];
+        const missing = required.filter(r => !perms.has(r.flag)).map(r => r.name);
+        if (missing.length > 0) {
+            return interaction.reply({
+                content: `❌ Le bot n'a pas les permissions nécessaires dans cette catégorie :\n${missing.map(m => `• **${m}**`).join("\n")}\n\nAjoute ces permissions au rôle du bot sur le portail Discord et ré-invite le bot.`,
+                flags: MessageFlags.Ephemeral,
+            });
+        }
+    }
+
     try {
         const voiceChannel = await guild.channels.create({
             name: channelName,
