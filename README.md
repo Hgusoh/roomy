@@ -84,37 +84,73 @@ npm start
 
 A simple health-check command. Replies with **Pong!**
 
+---
+
 ### `/create-room`
 
-Creates a temporary voice channel under a **"Rooms"** category.
+Creates a **hub voice channel** (prefixed with ➕) inside an existing category. When a user joins this hub channel, a temporary voice channel is automatically created and the user is moved into it.
 
 | Option | Required | Description |
 |--------|----------|-------------|
-| `name` | ✅ Yes | The name of the voice channel to create. |
-| `icon` | ❌ No | An optional icon prepended to the channel name. |
-
-**Available icons:**
-
-| Key | Icon |
-|-----|------|
-| `gaming` | 🎮 |
-| `music` | 🎵 |
-| `study` | 📚 |
-| `chill` | ☕ |
-| `movie` | 🎬 |
-| `sport` | ⚽ |
-| `code` | 💻 |
-| `art` | 🎨 |
+| `name` | ✅ Yes | The name of the hub voice channel. |
+| `category_id` | ✅ Yes | The ID of the category in which the hub will be created. |
 
 **How it works:**
 
-1. Run `/create-room name:My Room` (optionally add `icon:gaming`).
-2. The bot looks for a category named **"Rooms"** in the server. If it doesn't exist, it creates one automatically.
-3. A new voice channel is created under that category (e.g. `🎮 My Room`).
+1. Run `/create-room name:Gaming category_id:123456789`.
+2. A voice channel named **➕ Gaming** is created in the specified category.
+3. When a user joins this channel, the bot creates a temporary voice channel (e.g. `🔊 Gaming — Username`) and moves the user into it.
+4. Each user can only own **one** active temporary channel at a time. If they rejoin the hub, they are moved back to their existing channel.
+
+---
+
+### `/configure-room`
+
+Configures an existing hub channel (icon and user limit for the generated temporary channels).
+
+| Option | Required | Description |
+|--------|----------|-------------|
+| `channel_id` | ✅ Yes | The ID of the hub channel (➕) to configure. |
+| `user_limit` | ❌ No | Max number of users in generated temp channels (0 = unlimited, max 99). |
+| `icon` | ❌ No | Emoji displayed at the beginning of generated temp channel names. |
+
+> 💡 If no optional parameter is provided, the command displays the current configuration.
+
+---
+
+### `/configure-batch` 🔒
+
+*Administrator only* — Configures the interval of the automatic cleanup batch.
+
+| Option | Required | Description |
+|--------|----------|-------------|
+| `interval` | ❌ No | Interval in seconds between each cleanup check (10–3600). |
+
+> 💡 If no parameter is provided, the command displays the current interval. Default: **300s** (5 minutes).
+
+---
+
+### `/configure-roles` 🔒
+
+*Administrator only* — Defines which roles are allowed to use the bot commands. By default, only administrators can use commands.
+
+| Subcommand | Description |
+|------------|-------------|
+| `add role:@Role` | Adds a role to the allowed list. |
+| `remove role:@Role` | Removes a role from the allowed list. |
+| `list` | Displays the currently allowed roles. |
+
+> 💡 Administrators always have access regardless of the configured roles.
+
+---
+
+### 🔐 Permissions
+
+By default, only **server administrators** can use the bot commands. Use `/configure-roles add` to grant access to additional roles. The `/configure-roles` and `/configure-batch` commands remain admin-only.
 
 ### 🧹 Automatic room cleanup
 
-The bot runs a background task every **5 minutes** that checks all voice channels under the **"Rooms"** category. If a channel is found empty on **two consecutive checks** (i.e. ~10 minutes with no one in it), it is automatically deleted. This keeps your server clean from abandoned rooms.
+The bot runs a background task (configurable via `/configure-batch`) that checks all **temporary** voice channels. If a channel is found empty on **two consecutive checks**, it is automatically deleted. Hub channels (➕) are never deleted. All configuration is persisted to disk and survives bot restarts.
 
 ## 📁 Project structure
 
@@ -122,20 +158,26 @@ The bot runs a background task every **5 minutes** that checks all voice channel
 roomy/
 ├── src/
 │   ├── batch/
-│   │   └── room-cleanup.ts  # Automatic cleanup of empty rooms
+│   │   └── room-cleanup.ts       # Automatic cleanup of empty temp channels
 │   ├── commands/
-│   │   ├── index.ts          # Command registry
-│   │   ├── create-room.ts    # /create-room command
-│   │   └── ping.ts           # /ping command
+│   │   ├── index.ts               # Command registry
+│   │   ├── create-room.ts         # /create-room command
+│   │   ├── configure-room.ts      # /configure-room command
+│   │   ├── configure-batch.ts     # /configure-batch command (admin)
+│   │   ├── configure-roles.ts     # /configure-roles command (admin)
+│   │   └── ping.ts                # /ping command
 │   ├── config/
-│   │   └── config.ts         # Environment variables loader
-│   ├── deploy-commands.ts    # Slash commands deployment
-│   └── index.ts              # Bot entry point
-├── .env                      # Environment variables (to create)
+│   │   └── config.ts              # Environment variables loader
+│   ├── deploy-commands.ts         # Slash commands deployment
+│   ├── guards.ts                  # Permission checks (role-based access)
+│   ├── hub-channels.ts            # Persistent store (hubs, temp channels, config)
+│   └── index.ts                   # Bot entry point
+├── hub-data.json                  # Runtime data (auto-generated, gitignored)
+├── .env                           # Environment variables (to create)
 ├── .gitignore
 ├── CONTRIBUTING.md
 ├── package.json
-├── roomy.service             # Systemd service file for production
+├── roomy.service                  # Systemd service file for production
 ├── tsconfig.json
 └── README.md
 ```
