@@ -1,10 +1,11 @@
 import { Client, Snowflake, VoiceChannel } from "discord.js";
-import { tempChannels, removeTempChannel } from "../hub-channels";
-
-const CLEANUP_INTERVAL_MS = 20 * 1000; // 5 minutes
+import { tempChannels, removeTempChannel, cleanupIntervalMs } from "../hub-channels";
 
 // Set of channel IDs that were empty on the previous check
 const pendingDeletion = new Set<string>();
+
+let currentTimer: ReturnType<typeof setInterval> | null = null;
+let currentClient: Client | null = null;
 
 async function checkAndCleanRooms(client: Client) {
     // Only iterate over tracked temporary channels
@@ -54,12 +55,23 @@ async function checkAndCleanRooms(client: Client) {
 }
 
 export function startRoomCleanupBatch(client: Client) {
-    console.log(`🔄 Batch de nettoyage des rooms démarré (intervalle: ${CLEANUP_INTERVAL_MS / 1000}s).`);
+    currentClient = client;
+    console.log(`🔄 Batch de nettoyage des rooms démarré (intervalle: ${cleanupIntervalMs / 1000}s).`);
 
-    setInterval(() => {
+    currentTimer = setInterval(() => {
         checkAndCleanRooms(client).catch((err) =>
             console.error("❌ Erreur dans le batch de nettoyage:", err)
         );
-    }, CLEANUP_INTERVAL_MS);
+    }, cleanupIntervalMs);
+}
+
+export function restartRoomCleanupBatch() {
+    if (currentTimer) {
+        clearInterval(currentTimer);
+        currentTimer = null;
+    }
+    if (currentClient) {
+        startRoomCleanupBatch(currentClient);
+    }
 }
 

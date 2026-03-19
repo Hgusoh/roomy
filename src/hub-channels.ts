@@ -3,11 +3,20 @@ import path from "node:path";
 
 const DATA_FILE = path.resolve(process.cwd(), "hub-data.json");
 
+export interface HubConfig {
+    userLimit?: number;
+    icon?: string;
+}
+
 interface HubData {
     hubChannels: string[];
     tempChannels: Record<string, string>;
     tempChannelOwners: Record<string, string>;
+    hubConfigs: Record<string, HubConfig>;
+    cleanupIntervalMs: number;
 }
+
+const DEFAULT_CLEANUP_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
 
 function load(): HubData {
     try {
@@ -17,9 +26,11 @@ function load(): HubData {
             hubChannels: Array.isArray(data.hubChannels) ? data.hubChannels : [],
             tempChannels: data.tempChannels && typeof data.tempChannels === "object" ? data.tempChannels : {},
             tempChannelOwners: data.tempChannelOwners && typeof data.tempChannelOwners === "object" ? data.tempChannelOwners : {},
+            hubConfigs: data.hubConfigs && typeof data.hubConfigs === "object" ? data.hubConfigs : {},
+            cleanupIntervalMs: typeof data.cleanupIntervalMs === "number" ? data.cleanupIntervalMs : DEFAULT_CLEANUP_INTERVAL_MS,
         };
     } catch {
-        return { hubChannels: [], tempChannels: {}, tempChannelOwners: {} };
+        return { hubChannels: [], tempChannels: {}, tempChannelOwners: {}, hubConfigs: {}, cleanupIntervalMs: DEFAULT_CLEANUP_INTERVAL_MS };
     }
 }
 
@@ -28,6 +39,8 @@ function save() {
         hubChannels: [...hubChannels],
         tempChannels: Object.fromEntries(tempChannels),
         tempChannelOwners: Object.fromEntries(tempChannelOwners),
+        hubConfigs: Object.fromEntries(hubConfigs),
+        cleanupIntervalMs,
     };
     fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2), "utf-8");
 }
@@ -44,7 +57,20 @@ export const tempChannels = new Map<string, string>(Object.entries(initial.tempC
 // Map of user ID → temporary channel ID they own
 export const tempChannelOwners = new Map<string, string>(Object.entries(initial.tempChannelOwners));
 
+// Map of hub channel ID → configuration (user limit, icon, etc.)
+export const hubConfigs = new Map<string, HubConfig>(
+    Object.entries(initial.hubConfigs)
+);
+
+// Cleanup batch interval in milliseconds
+export let cleanupIntervalMs: number = initial.cleanupIntervalMs;
+
 // --- Mutation helpers that auto-persist ---
+
+export function setCleanupInterval(ms: number) {
+    cleanupIntervalMs = ms;
+    save();
+}
 
 export function addHubChannel(id: string) {
     hubChannels.add(id);
@@ -53,6 +79,14 @@ export function addHubChannel(id: string) {
 
 export function removeHubChannel(id: string) {
     hubChannels.delete(id);
+    hubConfigs.delete(id);
+    save();
+}
+
+export function setHubConfig(hubId: string, config: HubConfig) {
+    const existing = hubConfigs.get(hubId) ?? {};
+    const merged: HubConfig = { ...existing, ...config };
+    hubConfigs.set(hubId, merged);
     save();
 }
 

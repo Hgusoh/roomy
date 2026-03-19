@@ -1,9 +1,9 @@
-import { ChannelType, ChatInputCommandInteraction, Client, GatewayIntentBits } from "discord.js";
+import { ChannelType, ChatInputCommandInteraction, Client, GatewayIntentBits, Snowflake } from "discord.js";
 import { config } from "./config/config";
 import { commands } from "./commands";
 import { deployCommands } from "./deploy-commands";
 import { startRoomCleanupBatch } from "./batch/room-cleanup";
-import { hubChannels, tempChannelOwners, addTempChannel } from "./hub-channels";
+import { hubChannels, hubConfigs, tempChannelOwners, addTempChannel } from "./hub-channels";
 
 const client = new Client({
     intents: [
@@ -56,7 +56,7 @@ client.on("voiceStateUpdate", async (oldState, newState) => {
     // Check if this user already owns an active temp channel
     const existingTempId = tempChannelOwners.get(member.id as string);
     if (existingTempId) {
-        const existingChannel = guild.channels.cache.get(existingTempId);
+        const existingChannel = guild.channels.cache.get(existingTempId as Snowflake);
         if (existingChannel) {
             // Move user to their existing temp channel instead of creating a new one
             try {
@@ -71,13 +71,16 @@ client.on("voiceStateUpdate", async (oldState, newState) => {
 
     // Derive temp channel name from hub channel name (remove ➕ prefix)
     const baseName = hubChannel.name.replace(/^➕*/, "");
-    const tempName = `🔊 ${baseName} — ${member.displayName}`;
+    const config = hubConfigs.get(channelId as string);
+    const icon = config?.icon ?? "🔊";
+    const tempName = `${icon} ${baseName} — ${member.displayName}`;
 
     try {
         const tempChannel = await guild.channels.create({
             name: tempName,
             type: ChannelType.GuildVoice,
             parent: hubChannel.parentId ?? undefined,
+            userLimit: config?.userLimit ?? 0,
         });
 
         // Track this temporary channel (persisted)
