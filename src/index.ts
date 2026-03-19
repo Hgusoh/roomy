@@ -1,9 +1,10 @@
-import { ChannelType, ChatInputCommandInteraction, Client, GatewayIntentBits, Snowflake } from "discord.js";
+import { ChannelType, ChatInputCommandInteraction, Client, GatewayIntentBits, MessageFlags, Snowflake } from "discord.js";
 import { config } from "./config/config";
 import { commands } from "./commands";
 import { deployCommands } from "./deploy-commands";
 import { startRoomCleanupBatch } from "./batch/room-cleanup";
 import { hubChannels, hubConfigs, tempChannelOwners, addTempChannel } from "./hub-channels";
+import { hasCommandAccess } from "./guards";
 
 const client = new Client({
     intents: [
@@ -36,6 +37,19 @@ client.on("interactionCreate", async (interaction) => {
     }
     const chatInteraction = interaction as ChatInputCommandInteraction;
     const { commandName } = chatInteraction;
+
+    // Permission check (configure-roles is admin-only via Discord permissions, skip guard)
+    if (commandName !== "configure-roles") {
+        const member = chatInteraction.member as import("discord.js").GuildMember | null;
+        if (member && !hasCommandAccess(member)) {
+            await chatInteraction.reply({
+                content: "❌ Tu n'as pas la permission d'utiliser cette commande.",
+                flags: MessageFlags.Ephemeral,
+            });
+            return;
+        }
+    }
+
     if (commands[commandName as keyof typeof commands]) {
         await commands[commandName as keyof typeof commands].execute(chatInteraction);
     }

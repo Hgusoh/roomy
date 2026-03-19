@@ -1,6 +1,7 @@
 import {
     ChannelType,
     ChatInputCommandInteraction,
+    MessageFlags,
     SlashCommandBuilder,
 } from "discord.js";
 import { addHubChannel } from "../hub-channels";
@@ -26,7 +27,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     if (!guild) {
         return interaction.reply({
             content: "❌ Cette commande ne peut être utilisée que dans un serveur.",
-            ephemeral: true,
+            flags: MessageFlags.Ephemeral,
         });
     }
 
@@ -38,7 +39,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     if (!category || category.type !== ChannelType.GuildCategory) {
         return interaction.reply({
             content: "❌ Catégorie introuvable. Vérifie l'ID fourni.",
-            ephemeral: true,
+            flags: MessageFlags.Ephemeral,
         });
     }
 

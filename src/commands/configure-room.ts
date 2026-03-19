@@ -1,5 +1,6 @@
 import {
     ChatInputCommandInteraction,
+    MessageFlags,
     SlashCommandBuilder,
 } from "discord.js";
 import { hubChannels, hubConfigs, setHubConfig, HubConfig } from "../hub-channels";
@@ -33,7 +34,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     if (!guild) {
         return interaction.reply({
             content: "❌ Cette commande ne peut être utilisée que dans un serveur.",
-            ephemeral: true,
+            flags: MessageFlags.Ephemeral,
         });
     }
 
@@ -43,7 +44,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     if (!hubChannels.has(channelId)) {
         return interaction.reply({
             content: "❌ Ce salon n'est pas un hub enregistré. Vérifie l'ID fourni.",
-            ephemeral: true,
+            flags: MessageFlags.Ephemeral,
         });
     }
 
@@ -57,7 +58,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
         const iconStr = current?.icon ?? "🔊";
         return interaction.reply({
             content: `ℹ️ Configuration actuelle du hub :\n• Limite de places : **${limitStr}**\n• Icône : **${iconStr}**`,
-            ephemeral: true,
+            flags: MessageFlags.Ephemeral,
         });
     }
 

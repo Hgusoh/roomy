@@ -1,5 +1,6 @@
 import {
     ChatInputCommandInteraction,
+    MessageFlags,
     PermissionFlagsBits,
     SlashCommandBuilder,
 } from "discord.js";
@@ -24,7 +25,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     if (!guild) {
         return interaction.reply({
             content: "❌ Cette commande ne peut être utilisée que dans un serveur.",
-            ephemeral: true,
+            flags: MessageFlags.Ephemeral,
         });
     }
 
@@ -34,7 +35,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     if (interval === null) {
         return interaction.reply({
             content: `ℹ️ Intervalle actuel du batch de nettoyage : **${cleanupIntervalMs / 1000}s**`,
-            ephemeral: true,
+            flags: MessageFlags.Ephemeral,
         });
     }
 
