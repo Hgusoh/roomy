@@ -48,7 +48,13 @@ Generate an invitation link:
 1. In the [Discord Developer Portal](https://discord.com/developers/applications)
 2. Go to "OAuth2" → "URL Generator"
 3. Select scopes: `bot`, `applications.commands`
-4. Select the required permissions (Manage Channels, Connect, etc.)
+4. Select the following bot permissions:
+   - **Manage Channels** — Create/delete voice channels
+   - **Manage Roles** — Sync permission overwrites when creating channels in categories
+   - **Move Members** — Move users into temporary voice channels
+   - **Connect** — Interact with voice channels
+   - **View Channels** — Read channel and category info
+   - **Send Messages** — Send log messages to the configured text channel
 5. Copy the generated URL and open it in your browser
 
 ## 🎮 Usage

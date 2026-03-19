@@ -1,4 +1,4 @@
-import { ChannelType, ChatInputCommandInteraction, Client, GatewayIntentBits, MessageFlags, Snowflake } from "discord.js";
+import { ChannelType, ChatInputCommandInteraction, Client, GatewayIntentBits, MessageFlags, PermissionFlagsBits, Snowflake } from "discord.js";
 import { config } from "./config/config";
 import { commands } from "./commands";
 import { deployCommands } from "./deploy-commands";
@@ -98,6 +98,24 @@ client.on("voiceStateUpdate", async (oldState, newState) => {
             type: ChannelType.GuildVoice,
             parent: hubChannel.parentId ?? undefined,
             userLimit: config?.userLimit ?? 0,
+            permissionOverwrites: [
+                {
+                    id: guild.id,
+                    allow: [
+                        PermissionFlagsBits.ViewChannel,
+                        PermissionFlagsBits.Connect,
+                    ],
+                },
+                {
+                    id: guild.client.user!.id,
+                    allow: [
+                        PermissionFlagsBits.ViewChannel,
+                        PermissionFlagsBits.Connect,
+                        PermissionFlagsBits.ManageChannels,
+                        PermissionFlagsBits.MoveMembers,
+                    ],
+                },
+            ],
         });
 
         // Track this temporary channel (persisted)
@@ -106,8 +124,9 @@ client.on("voiceStateUpdate", async (oldState, newState) => {
         // Move the member to the new temp channel
         await member.voice.setChannel(tempChannel);
         await sendLog(guild.id as string, `🔊 Salon temporaire **${tempChannel.name}** créé pour **${member.displayName}**.`);
-    } catch (err) {
-        console.error(`❌ Impossible de créer un salon temporaire pour ${member.displayName}:`, err);
+    } catch (err: any) {
+        console.error(`❌ Impossible de créer un salon temporaire pour ${member.displayName}:`, err?.message ?? err);
+        await sendLog(guild.id as string, `❌ Erreur lors de la création d'un salon temporaire pour **${member.displayName}** : ${err?.message ?? err}`);
     }
 });
 
