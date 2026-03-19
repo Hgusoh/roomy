@@ -28,3 +28,7 @@ Thumbs.db
 .cache/
 # Deploy artifacts
 *.tar.gz
+
+# Bot persistent data
+hub-data.json
+

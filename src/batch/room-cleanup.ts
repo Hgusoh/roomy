@@ -1,57 +1,53 @@
-import { ChannelType, Client, VoiceChannel } from "discord.js";
+import { Client, Snowflake, VoiceChannel } from "discord.js";
+import { tempChannels, removeTempChannel } from "../hub-channels";
 
-const CLEANUP_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
+const CLEANUP_INTERVAL_MS = 20 * 1000; // 5 minutes
 
 // Set of channel IDs that were empty on the previous check
 const pendingDeletion = new Set<string>();
 
 async function checkAndCleanRooms(client: Client) {
-    for (const guild of client.guilds.cache.values()) {
-        // Find the "Rooms" category
-        const category = guild.channels.cache.find(
-            (ch) => ch.type === ChannelType.GuildCategory && ch.name === "Rooms"
-        );
+    // Only iterate over tracked temporary channels
+    for (const [tempChannelId] of tempChannels) {
+        const channel = client.channels.cache.get(tempChannelId as Snowflake) as VoiceChannel | undefined;
 
-        if (!category) continue;
+        if (!channel) {
+            // Channel no longer exists, clean up tracking
+            removeTempChannel(tempChannelId);
+            pendingDeletion.delete(tempChannelId);
+            continue;
+        }
 
-        // Get all voice channels under the "Rooms" category
-        const voiceChannels = guild.channels.cache.filter(
-            (ch): ch is VoiceChannel =>
-                ch.type === ChannelType.GuildVoice && ch.parentId === category.id
-        );
+        const memberCount = channel.members.size;
 
-        for (const [channelId, channel] of voiceChannels) {
-            const id = channelId as string;
-            const memberCount = channel.members.size;
-
-            if (memberCount === 0) {
-                if (pendingDeletion.has(id)) {
-                    // Second consecutive check empty → delete
-                    try {
-                        await channel.delete("Room vide depuis 2 vérifications consécutives.");
-                        pendingDeletion.delete(id);
-                        console.log(`🗑️ Salon "${channel.name}" supprimé (vide depuis 2 checks).`);
-                    } catch (err) {
-                        console.error(`❌ Impossible de supprimer le salon "${channel.name}":`, err);
-                    }
-                } else {
-                    // First check empty → add to pending
-                    pendingDeletion.add(id);
-                    console.log(`⏳ Salon "${channel.name}" est vide, ajouté à la file d'attente.`);
+        if (memberCount === 0) {
+            if (pendingDeletion.has(tempChannelId)) {
+                // Second consecutive check empty → delete
+                try {
+                    await channel.delete("Room temporaire vide depuis 2 vérifications consécutives.");
+                    removeTempChannel(tempChannelId);
+                    pendingDeletion.delete(tempChannelId);
+                    console.log(`🗑️ Salon temporaire "${channel.name}" supprimé (vide depuis 2 checks).`);
+                } catch (err) {
+                    console.error(`❌ Impossible de supprimer le salon "${channel.name}":`, err);
                 }
             } else {
-                // Channel has users → remove from pending if it was there
-                if (pendingDeletion.has(id)) {
-                    pendingDeletion.delete(id);
-                    console.log(`✅ Salon "${channel.name}" n'est plus vide, retiré de la file d'attente.`);
-                }
+                // First check empty → add to pending
+                pendingDeletion.add(tempChannelId);
+                console.log(`⏳ Salon temporaire "${channel.name}" est vide, ajouté à la file d'attente.`);
+            }
+        } else {
+            // Channel has users → remove from pending if it was there
+            if (pendingDeletion.has(tempChannelId)) {
+                pendingDeletion.delete(tempChannelId);
+                console.log(`✅ Salon temporaire "${channel.name}" n'est plus vide, retiré de la file d'attente.`);
             }
         }
     }
 
     // Clean up pending entries for channels that no longer exist
     for (const channelId of pendingDeletion) {
-        if (!client.channels.cache.find((ch) => ch.id === channelId)) {
+        if (!client.channels.cache.has(channelId as Snowflake)) {
             pendingDeletion.delete(channelId);
         }
     }

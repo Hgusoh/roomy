@@ -1,8 +1,9 @@
-import { ChatInputCommandInteraction, Client, GatewayIntentBits } from "discord.js";
+import { ChannelType, ChatInputCommandInteraction, Client, GatewayIntentBits } from "discord.js";
 import { config } from "./config/config";
 import { commands } from "./commands";
 import { deployCommands } from "./deploy-commands";
 import { startRoomCleanupBatch } from "./batch/room-cleanup";
+import { hubChannels, tempChannelOwners, addTempChannel } from "./hub-channels";
 
 const client = new Client({
     intents: [
@@ -37,6 +38,56 @@ client.on("interactionCreate", async (interaction) => {
     const { commandName } = chatInteraction;
     if (commands[commandName as keyof typeof commands]) {
         await commands[commandName as keyof typeof commands].execute(chatInteraction);
+    }
+});
+
+// When a user joins a hub channel (➕), create a temporary voice channel and move them
+client.on("voiceStateUpdate", async (oldState, newState) => {
+    const channelId = newState.channelId;
+    if (!channelId || !hubChannels.has(channelId as string)) return;
+
+    const guild = newState.guild;
+    const member = newState.member;
+    if (!member) return;
+
+    const hubChannel = guild.channels.cache.get(channelId);
+    if (!hubChannel) return;
+
+    // Check if this user already owns an active temp channel
+    const existingTempId = tempChannelOwners.get(member.id as string);
+    if (existingTempId) {
+        const existingChannel = guild.channels.cache.get(existingTempId);
+        if (existingChannel) {
+            // Move user to their existing temp channel instead of creating a new one
+            try {
+                await member.voice.setChannel(existingChannel.id);
+                console.log(`↩️ ${member.displayName} a déjà un salon actif, déplacé vers "${existingChannel.name}".`);
+            } catch (err) {
+                console.error(`❌ Impossible de déplacer ${member.displayName} vers son salon existant:`, err);
+            }
+            return;
+        }
+    }
+
+    // Derive temp channel name from hub channel name (remove ➕ prefix)
+    const baseName = hubChannel.name.replace(/^➕*/, "");
+    const tempName = `🔊 ${baseName} — ${member.displayName}`;
+
+    try {
+        const tempChannel = await guild.channels.create({
+            name: tempName,
+            type: ChannelType.GuildVoice,
+            parent: hubChannel.parentId ?? undefined,
+        });
+
+        // Track this temporary channel (persisted)
+        addTempChannel(tempChannel.id as string, channelId as string, member.id as string);
+
+        // Move the member to the new temp channel
+        await member.voice.setChannel(tempChannel);
+        console.log(`🔊 Salon temporaire "${tempChannel.name}" créé pour ${member.displayName}.`);
+    } catch (err) {
+        console.error(`❌ Impossible de créer un salon temporaire pour ${member.displayName}:`, err);
     }
 });
 

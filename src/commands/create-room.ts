@@ -3,38 +3,22 @@ import {
     ChatInputCommandInteraction,
     SlashCommandBuilder,
 } from "discord.js";
-
-const Icons: Record<string, string> = {
-    gaming: "🎮",
-    music: "🎵",
-    study: "📚",
-    chill: "☕",
-    movie: "🎬",
-    sport: "⚽",
-    code: "💻",
-    art: "🎨",
-};
-
-const iconChoices = Object.entries(Icons).map(([key, emoji]) => ({
-    name: `${emoji} ${key}`,
-    value: key,
-}));
+import { addHubChannel } from "../hub-channels";
 
 export const data = new SlashCommandBuilder()
     .setName("create-room")
-    .setDescription("Crée un salon vocal dans la catégorie dédiée.")
+    .setDescription("Crée un salon vocal hub (➕) dans une catégorie existante.")
     .addStringOption((option) =>
         option
             .setName("name")
-            .setDescription("Le nom du salon vocal à créer.")
+            .setDescription("Le nom du salon vocal hub à créer.")
             .setRequired(true)
     )
     .addStringOption((option) =>
         option
-            .setName("icon")
-            .setDescription("Une icône optionnelle pour le salon.")
-            .setRequired(false)
-            .addChoices(...iconChoices)
+            .setName("category_id")
+            .setDescription("L'ID de la catégorie dans laquelle créer le hub.")
+            .setRequired(true)
     );
 
 export async function execute(interaction: ChatInputCommandInteraction) {
@@ -47,30 +31,30 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     }
 
     const name = interaction.options.getString("name", true);
-    const iconKey = interaction.options.getString("icon");
+    const categoryId = interaction.options.getString("category_id", true);
 
-    const channelName = iconKey ? `${Icons[iconKey]} ${name}` : name;
-
-    // Find or create the "Rooms" category
-    let category = guild.channels.cache.find(
-        (ch) => ch.type === ChannelType.GuildCategory && ch.name === "Rooms"
-    );
-
-    if (!category) {
-        category = await guild.channels.create({
-            name: "Rooms",
-            type: ChannelType.GuildCategory,
+    // Verify the category exists
+    const category = guild.channels.cache.get(categoryId);
+    if (!category || category.type !== ChannelType.GuildCategory) {
+        return interaction.reply({
+            content: "❌ Catégorie introuvable. Vérifie l'ID fourni.",
+            ephemeral: true,
         });
     }
+
+    const channelName = `➕ ${name}`;
 
     const voiceChannel = await guild.channels.create({
         name: channelName,
         type: ChannelType.GuildVoice,
-        parent: category!.id,
+        parent: categoryId,
     });
 
+    // Register this channel as a hub channel (persisted)
+    addHubChannel(voiceChannel.id as string);
+
     return interaction.reply({
-        content: `✅ Salon vocal **${voiceChannel.name}** créé dans la catégorie **Rooms** !`,
+        content: `✅ Salon hub **${voiceChannel.name}** créé dans la catégorie **${category.name}** !\nRejoins-le pour créer un salon vocal temporaire.`,
     });
 }
 
