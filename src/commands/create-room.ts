@@ -35,8 +35,13 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     const name = interaction.options.getString("name", true);
     const categoryId = interaction.options.getString("category_id", true);
 
-    // Verify the category exists
-    const category = guild.channels.cache.get(categoryId);
+    // Verify the category exists (fetch from API, not cache, in case bot can't see it yet)
+    let category;
+    try {
+        category = await guild.channels.fetch(categoryId);
+    } catch {
+        category = null;
+    }
     if (!category || category.type !== ChannelType.GuildCategory) {
         return interaction.reply({
             content: "❌ Catégorie introuvable. Vérifie l'ID fourni.",

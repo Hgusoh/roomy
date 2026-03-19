@@ -4,7 +4,6 @@ import {
     MessageFlags,
     PermissionFlagsBits,
     SlashCommandBuilder,
-    Snowflake,
 } from "discord.js";
 import { getLogChannel, setLogChannel, removeLogChannel } from "../hub-channels";
 
@@ -61,8 +60,13 @@ export async function execute(interaction: ChatInputCommandInteraction) {
         });
     }
 
-    // Verify the channel exists and is a text channel
-    const channel = guild.channels.cache.get(channelId as Snowflake);
+    // Verify the channel exists and is a text channel (fetch from API)
+    let channel;
+    try {
+        channel = await guild.channels.fetch(channelId);
+    } catch {
+        channel = null;
+    }
     if (!channel || channel.type !== ChannelType.GuildText) {
         return interaction.reply({
             content: "❌ Channel textuel introuvable. Vérifie l'ID fourni.",
