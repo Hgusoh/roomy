@@ -144,9 +144,22 @@ Configures an existing hub channel (icon and user limit for the generated tempor
 
 ---
 
+### `/configure-logs` 🔒
+
+*Administrator only* — Configures the text channel where the bot sends log messages (room creation, deletion, cleanup events).
+
+| Option | Required | Description |
+|--------|----------|-------------|
+| `channel_id` | ❌ No | The ID of the text channel to use for logs. |
+| `disable` | ❌ No | Set to `true` to disable logging for this server. |
+
+> 💡 If no option is provided, the command displays the currently configured log channel. Logs are always output to the console regardless of this setting.
+
+---
+
 ### 🔐 Permissions
 
-By default, only **server administrators** can use the bot commands. Use `/configure-roles add` to grant access to additional roles. The `/configure-roles` and `/configure-batch` commands remain admin-only.
+By default, only **server administrators** can use the bot commands. Use `/configure-roles add` to grant access to additional roles. The `/configure-roles`, `/configure-batch` and `/configure-logs` commands remain admin-only.
 
 ### 🧹 Automatic room cleanup
 
@@ -165,12 +178,14 @@ roomy/
 │   │   ├── configure-room.ts      # /configure-room command
 │   │   ├── configure-batch.ts     # /configure-batch command (admin)
 │   │   ├── configure-roles.ts     # /configure-roles command (admin)
+│   │   ├── configure-logs.ts      # /configure-logs command (admin)
 │   │   └── ping.ts                # /ping command
 │   ├── config/
 │   │   └── config.ts              # Environment variables loader
 │   ├── deploy-commands.ts         # Slash commands deployment
 │   ├── guards.ts                  # Permission checks (role-based access)
 │   ├── hub-channels.ts            # Persistent store (hubs, temp channels, config)
+│   ├── logger.ts                  # Log utility (sends messages to configured log channel)
 │   └── index.ts                   # Bot entry point
 ├── hub-data.json                  # Runtime data (auto-generated, gitignored)
 ├── .env                           # Environment variables (to create)

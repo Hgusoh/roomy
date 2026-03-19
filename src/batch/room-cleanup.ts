@@ -1,5 +1,6 @@
 import { Client, Snowflake, VoiceChannel } from "discord.js";
 import { tempChannels, removeTempChannel, cleanupIntervalMs } from "../hub-channels";
+import { sendLog } from "../logger";
 
 // Set of channel IDs that were empty on the previous check
 const pendingDeletion = new Set<string>();
@@ -28,20 +29,20 @@ async function checkAndCleanRooms(client: Client) {
                     await channel.delete("Room temporaire vide depuis 2 vérifications consécutives.");
                     removeTempChannel(tempChannelId);
                     pendingDeletion.delete(tempChannelId);
-                    console.log(`🗑️ Salon temporaire "${channel.name}" supprimé (vide depuis 2 checks).`);
+                    await sendLog(channel.guild.id as string, `🗑️ Salon temporaire **${channel.name}** supprimé (vide depuis 2 checks).`);
                 } catch (err) {
                     console.error(`❌ Impossible de supprimer le salon "${channel.name}":`, err);
                 }
             } else {
                 // First check empty → add to pending
                 pendingDeletion.add(tempChannelId);
-                console.log(`⏳ Salon temporaire "${channel.name}" est vide, ajouté à la file d'attente.`);
+                await sendLog(channel.guild.id as string, `⏳ Salon temporaire **${channel.name}** est vide, sera supprimé au prochain check.`);
             }
         } else {
             // Channel has users → remove from pending if it was there
             if (pendingDeletion.has(tempChannelId)) {
                 pendingDeletion.delete(tempChannelId);
-                console.log(`✅ Salon temporaire "${channel.name}" n'est plus vide, retiré de la file d'attente.`);
+                await sendLog(channel.guild.id as string, `✅ Salon temporaire **${channel.name}** n'est plus vide, retiré de la file d'attente.`);
             }
         }
     }

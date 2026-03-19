@@ -5,6 +5,7 @@ import { deployCommands } from "./deploy-commands";
 import { startRoomCleanupBatch } from "./batch/room-cleanup";
 import { hubChannels, hubConfigs, tempChannelOwners, addTempChannel } from "./hub-channels";
 import { hasCommandAccess } from "./guards";
+import { initLogger, sendLog } from "./logger";
 
 const client = new Client({
     intents: [
@@ -17,6 +18,7 @@ const client = new Client({
 
 client.once("clientReady", async () => {
     console.log("Discord bot is ready! 🤖");
+    initLogger(client);
 
     // Deploy commands to all guilds the bot is already in
     for (const guild of client.guilds.cache.values()) {
@@ -38,8 +40,9 @@ client.on("interactionCreate", async (interaction) => {
     const chatInteraction = interaction as ChatInputCommandInteraction;
     const { commandName } = chatInteraction;
 
-    // Permission check (configure-roles is admin-only via Discord permissions, skip guard)
-    if (commandName !== "configure-roles") {
+    // Permission check (admin-only commands are handled via Discord permissions, skip guard)
+    const adminCommands = ["configure-roles", "configure-batch", "configure-logs"];
+    if (!adminCommands.includes(commandName)) {
         const member = chatInteraction.member as import("discord.js").GuildMember | null;
         if (member && !hasCommandAccess(member)) {
             await chatInteraction.reply({
@@ -75,7 +78,7 @@ client.on("voiceStateUpdate", async (oldState, newState) => {
             // Move user to their existing temp channel instead of creating a new one
             try {
                 await member.voice.setChannel(existingChannel.id);
-                console.log(`↩️ ${member.displayName} a déjà un salon actif, déplacé vers "${existingChannel.name}".`);
+                await sendLog(guild.id as string, `↩️ **${member.displayName}** a déjà un salon actif, déplacé vers **${existingChannel.name}**.`);
             } catch (err) {
                 console.error(`❌ Impossible de déplacer ${member.displayName} vers son salon existant:`, err);
             }
@@ -102,7 +105,7 @@ client.on("voiceStateUpdate", async (oldState, newState) => {
 
         // Move the member to the new temp channel
         await member.voice.setChannel(tempChannel);
-        console.log(`🔊 Salon temporaire "${tempChannel.name}" créé pour ${member.displayName}.`);
+        await sendLog(guild.id as string, `🔊 Salon temporaire **${tempChannel.name}** créé pour **${member.displayName}**.`);
     } catch (err) {
         console.error(`❌ Impossible de créer un salon temporaire pour ${member.displayName}:`, err);
     }

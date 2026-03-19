@@ -15,6 +15,7 @@ interface HubData {
     hubConfigs: Record<string, HubConfig>;
     cleanupIntervalMs: number;
     allowedRoles: Record<string, string[]>;
+    logChannels: Record<string, string>;
 }
 
 const DEFAULT_CLEANUP_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
@@ -30,9 +31,10 @@ function load(): HubData {
             hubConfigs: data.hubConfigs && typeof data.hubConfigs === "object" ? data.hubConfigs : {},
             cleanupIntervalMs: typeof data.cleanupIntervalMs === "number" ? data.cleanupIntervalMs : DEFAULT_CLEANUP_INTERVAL_MS,
             allowedRoles: data.allowedRoles && typeof data.allowedRoles === "object" ? data.allowedRoles : {},
+            logChannels: data.logChannels && typeof data.logChannels === "object" ? data.logChannels : {},
         };
     } catch {
-        return { hubChannels: [], tempChannels: {}, tempChannelOwners: {}, hubConfigs: {}, cleanupIntervalMs: DEFAULT_CLEANUP_INTERVAL_MS, allowedRoles: {} };
+        return { hubChannels: [], tempChannels: {}, tempChannelOwners: {}, hubConfigs: {}, cleanupIntervalMs: DEFAULT_CLEANUP_INTERVAL_MS, allowedRoles: {}, logChannels: {} };
     }
 }
 
@@ -44,6 +46,7 @@ function save() {
         hubConfigs: Object.fromEntries(hubConfigs),
         cleanupIntervalMs,
         allowedRoles: Object.fromEntries(allowedRoles),
+        logChannels: Object.fromEntries(logChannels),
     };
     fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2), "utf-8");
 }
@@ -71,6 +74,11 @@ export let cleanupIntervalMs: number = initial.cleanupIntervalMs;
 // Map of guild ID → list of role IDs allowed to use bot commands
 export const allowedRoles = new Map<string, string[]>(
     Object.entries(initial.allowedRoles)
+);
+
+// Map of guild ID → log channel ID
+export const logChannels = new Map<string, string>(
+    Object.entries(initial.logChannels)
 );
 
 // --- Mutation helpers that auto-persist ---
@@ -106,6 +114,20 @@ export function removeAllowedRole(guildId: string, roleId: string) {
 
 export function getAllowedRoles(guildId: string): string[] {
     return allowedRoles.get(guildId) ?? [];
+}
+
+export function setLogChannel(guildId: string, channelId: string) {
+    logChannels.set(guildId, channelId);
+    save();
+}
+
+export function removeLogChannel(guildId: string) {
+    logChannels.delete(guildId);
+    save();
+}
+
+export function getLogChannel(guildId: string): string | undefined {
+    return logChannels.get(guildId);
 }
 
 export function addHubChannel(id: string) {
